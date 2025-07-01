@@ -8,4 +8,3 @@ class UserService
     {
         // Example method
     }
-}
