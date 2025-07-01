@@ -1,83 +1,70 @@
 <?php
 
-namespace Mcdcu\Projects\controllers;
+namespace Mcdcu\Projects\controllers\inventory_items;
 
+use Mcdcu\Projects\models\inventory_items\inventory_items;
 use Mcdcu\Projects\services\InventoryItemsService;
-use sigawa\mvccore\core\Controller;
-use sigawa\mvccore\http\Request;
-use sigawa\mvccore\http\Response;
+use sigawa\mvccore\Controller;
+use sigawa\mvccore\Request;
+use sigawa\mvccore\Response;
 
 class InventoryItemsController extends Controller
 {
-    public function index(Request $request, Response $response)
+     protected InventoryItemsService $service;
+
+    public function __construct()
     {
-        $items = InventoryItemsService::getAllItems();
-        return $response->json($items);
+        $this->service = new InventoryItemsService();
     }
 
-    public function show(Request $request, Response $response, int $id)
+    public function index()
     {
-        $item = InventoryItemsService::getItemById($id);
-        if (!$item) {
-            return $response->json(['error' => 'Item not found'], 404);
-        }
-        return $response->json($item);
+        $items = $this->service->getAll();
+        return $this->render('inventory_items/index', ['items' => $items]);
     }
 
-    public function store(Request $request, Response $response)
+    public function create(Request $request, Response $response)
     {
-        $data = $request->getBody();
-        $newItem = InventoryItemsService::createItem($data);
-
-        if (!$newItem) {
-            return $response->json(['error' => 'Failed to create item'], 400);
-        }
-
-        return $response->json($newItem, 201);
-    }
-
-    public function update(Request $request, Response $response, int $id)
-    {
-        $data = $request->getBody();
-        $updated = InventoryItemsService::updateItem($id, $data);
-
-        if (!$updated) {
-            return $response->json(['error' => 'Failed to update item or item not found'], 400);
+        if ($request->isPost()) {
+            $data = $request->getBody();
+            $item = $this->service->create($data);
+            if ($item) {
+                $response->redirect('/inventory-items');
+                return;
+            }
+            return $this->render('inventory_items/create', ['error' => 'Failed to create item.']);
         }
 
-        return $response->json(['message' => 'Item updated successfully']);
+        return $this->render('inventory_items/create');
     }
 
-    public function delete(Request $request, Response $response, int $id)
+    public function update(Request $request, Response $response)
     {
-        $deleted = InventoryItemsService::deleteItem($id);
-
-        if (!$deleted) {
-            return $response->json(['error' => 'Failed to delete item or item not found'], 400);
+        $id = $request->getParam('id');
+        if ($request->isPost()) {
+            $data = $request->getBody();
+            if ($this->service->update((int)$id, $data)) {
+                $response->redirect('/inventory-items');
+                return;
+            }
+            return $this->render('inventory_items/update', ['error' => 'Update failed.']);
         }
 
-        return $response->json(['message' => 'Item deleted successfully']);
+        $item = inventory_items::findbyId((int)$id);
+        return $this->render('inventory_items/update', ['item' => $item]);
     }
 
-    public function search(Request $request, Response $response)
+    public function delete(Request $request, Response $response)
     {
-        $query = $request->getQueryParams();
-        $term = $query['term'] ?? '';
-        $columns = explode(',', $query['columns'] ?? 'name,description,brand,model');
-        $limit = isset($query['limit']) ? (int)$query['limit'] : null;
+        $id = $request->getParam('id');
+        $this->service->delete((int)$id);
+        $response->redirect('/inventory-items');
+    }
 
-        $results = InventoryItemsService::searchItems($term, $columns, $limit);
-
-        return $response->json($results);
+    public function search(Request $request)
+    {
+        $term = $request->getParam('term');
+        $items = $this->service->search($term, ['name', 'description', 'brand', 'serial_number']);
+        return $this->render('inventory_items/index', ['items' => $items]);
     }
 }
-/*
- * InventoryItemsController handles CRUD operations and search for inventory items.
- * Methods:
- *   - index: List all inventory items.
- *   - show: Get a single item by ID.
- *   - store: Create a new inventory item.
- *   - update: Update an existing item by ID.
- *   - delete: Remove an item by ID.
- *   - search: Search items by term and columns.
- */
