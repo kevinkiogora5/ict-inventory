@@ -77,6 +77,4 @@ public static function search(string $term, array $columns, ?int $limit = null):
 
     return static::findAllByQuery($sql, $params);
 }
-
-
 }
