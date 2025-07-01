@@ -38,8 +38,6 @@ class User extends UserModel
             'password_created_at',
             'online_status',
             'access_token',
-            'created_at',
-            'updated_at',
         ];
     }
 
@@ -58,7 +56,27 @@ class User extends UserModel
         return [];
     }
      // --- User Retrieval & Queries ---
-     
+public static function search(string $term, array $columns = ['first_name', 'last_name'], ?int $limit = null): array
+{
+    $table = static::tableName();
+    $conditions = [];
+    $params = [];
+
+    foreach ($columns as $column) {
+        $conditions[] = "$column LIKE :term";
+    }
+
+    $sql = "SELECT * FROM $table";
+    if (!empty($conditions)) {
+        $sql .= ' WHERE (' . implode(' OR ', $conditions) . ')';
+        $params[':term'] = '%' . $term . '%';
+    }
+    if ($limit !== null) {
+        $sql .= ' LIMIT ' . intval($limit);
+    }
+
+    return static::findAllByQuery($sql, $params);
+}
     public static function findByEmail(string $email): ?self
     {
         return static::findOne(['email' => $email]);

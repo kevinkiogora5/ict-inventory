@@ -6,8 +6,84 @@ use sigawa\mvccore\db\DbModel;
 
 class inventory_assignment extends DbModel
 {
+    public $id = "";
+    public $inventory_item_id = "";
+    public $employee_id = "";
+    public $location_id = "";
+    public $issued_by = "";
+    public $issue_date = "";
+    public $notes = "";
+    public $created_at = "";
+    public $updated_at = "";
+
     public static function tableName(): string { return strtolower('inventory_assignment'); }
-    public function attributes(): array { return []; }
+    public function attributes(): array { return [
+        'inventory_item_id',
+        'employee_id',
+        'location_id',
+        'issued_by',
+        'issue_date',
+        'notes',
+    ]; }
     public function labels(): array { return []; }
     public function rules() { return []; }
+      public static function find_inventory_assignment(): array
+     {
+    $table = static::tableName();
+    $sql = "SELECT * FROM $table";
+    return self::findAllByQuery($sql);
+}
+public static function create(array $data):?self
+ {
+    $inventory_assignment = new static();
+    foreach ($data as $key => $value) {
+        if (property_exists($inventory_assignment, $key)) {
+            $inventory_assignment->$key = $value;
+        }
+    }
+    if ($inventory_assignment->save()) {
+        return $inventory_assignment;
+    }
+    return null;
+}
+public static function updateById(int $id, array $data): bool {
+    $instance = static::findbyId($id); // fetch the department by ID
+    if (!$instance) {
+        return false; // not found
+    }
+    foreach ($data as $key => $value) {
+        if (property_exists($instance, $key)) {
+            $instance->$key = $value;
+        }
+    }
+    return $instance->save();
+}
+public static function deleteById(int $id): bool {
+    $instance = static::findbyId($id);
+    if (!$instance) {
+        return false;
+    }
+    return $instance->delete();
+}
+public static function search(string $term, array $columns, ?int $limit = null): array {
+    $table = static::tableName();
+    $conditions = [];
+    $params = [];
+
+    foreach ($columns as $column) {
+        $conditions[] = "$column LIKE :term";
+    }
+    $sql = "SELECT * FROM $table";
+    if (!empty($conditions)) {
+        $sql .= ' WHERE (' . implode(' OR ', $conditions) . ')';
+        $params[':term'] = '%' . $term . '%';
+    }
+    if ($limit !== null) {
+        $sql .= ' LIMIT ' . intval($limit);
+    }
+
+    return static::findAllByQuery($sql, $params);
+}
+
+
 }

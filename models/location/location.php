@@ -14,7 +14,7 @@ class location extends DbModel
     public $modified;
     public static function tableName(): string { return strtolower('location'); }
     public function attributes(): array { return [
-         'county',
+            'county',
             'office',
             'created_by',
             'created_at',
@@ -29,6 +29,12 @@ class location extends DbModel
         }
         $this->modified = $now;
     }
+      public static function find_location(): array
+     {
+    $table = static::tableName();
+    $sql = "SELECT * FROM $table";
+    return self::findAllByQuery($sql);
+}
 
 //     public function getCreatorName(): string
 // {
@@ -44,11 +50,6 @@ public static function dropdownOptions(): array
     }
     return $options;
 }
-public static function deleteById(int $id): bool
-{
-    $location = static::findById($id);
-    return $location ? $location->delete() : false;
-}
 public static function create(array $data): ?self
 {
     $location = new self();
@@ -59,13 +60,41 @@ public static function create(array $data): ?self
     }
     return $location->save() ? $location : null;
 }
-
+public static function updateById(int $id, array $data): bool {
+    $instance = static::findbyId($id); // fetch the department by ID
+    if (!$instance) {
+        return false; // not found
+    }
+    foreach ($data as $key => $value) {
+        if (property_exists($instance, $key)) {
+            $instance->$key = $value;
+        }
+    }
+    return $instance->save();
+}
+public static function deleteById(int $id): bool {
+    $instance = static::findbyId($id);
+    if (!$instance) {
+        return false;
+    }
+    return $instance->delete();
+}
 public static function search(string $term, array $columns = ['county', 'office'], ?int $limit = null): array
 {
     $db = \sigawa\mvccore\Application::$app->db;
-    $sql = "SELECT * FROM location WHERE county LIKE :kw OR office LIKE :kw";
+    $likeClauses = [];
+    foreach ($columns as $col) {
+        $likeClauses[] = "$col LIKE :kw";
+    }
+    $sql = "SELECT * FROM location WHERE " . implode(' OR ', $likeClauses);
+    if ($limit !== null) {
+        $sql .= " LIMIT :limit";
+    }
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':kw', "%$term%");
+    if ($limit !== null) {
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+    }
     $stmt->execute();
     return $stmt->fetchAll(\PDO::FETCH_CLASS, self::class);
 }
