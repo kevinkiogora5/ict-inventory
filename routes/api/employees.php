@@ -1,7 +1,9 @@
 <?php 
 
 use Mcdcu\Projects\controllers\employees\employeesController;
+use Mcdcu\Projects\controllers\inventory_items\InventoryItemsController;
 
+$router->get('/goods', [InventoryItemsController::class, 'index']);
 $router->get('/employees', [employeesController::class, 'index']);
 $router->get('/employees/create', [employeesController::class, 'create']);
 $router->post('/employees/create', [employeesController::class, 'create']);

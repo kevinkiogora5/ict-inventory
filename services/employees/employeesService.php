@@ -3,30 +3,54 @@
 namespace Mcdcu\Projects\services\employees;
 
 use Mcdcu\Projects\models\employees\employees;
+use sigawa\mvccore\exception\ValidationException;
 
 class employeesService
 {
-    public function getAllEmployees(): array
+      public function getAll(): array
     {
-        return employees::find_employees();
+        return employees::findAll();
     }
 
-    public function createEmployee(array $data): ?employees
+    public function create(array $data): ?employees
     {
-        return employees::create($data);
+        if (empty($data)) {
+            throw new ValidationException(['Invalid data.']);
+        }
+        $items = new employees();
+        $items->loadData($data);
+        if(!$items->validate()) {
+            throw new ValidationException($items->getErrorMessages());
+        }
+        if (!$items->save()) {
+            throw new ValidationException($items->getErrorMessages());
+        }
+        return $items;
     }
 
-    public function updateEmployee(int $id, array $data): bool
+    public function update(int $id, array $data) : ?employees
     {
-        return employees::updateById($id, $data);
+        $items = employees::findOne(['id' => $id]);
+        if(!$items){
+            throw new ValidationException(['Item not found.']);
+        }
+        $items->loadData($data);
+        if (!$items->save()) {
+            throw new ValidationException($items->getErrors());
+        }
+        return $items;
     }
 
-    public function deleteEmployee(int $id): bool
+    public function delete(int $id): bool
     {
-        return employees::deleteById($id);
+        $items = employees::findOne(['id' => $id]);
+        if(!$items){
+            throw new ValidationException(['Item not found.']);
+        }
+        return $items->delete();
     }
 
-    public function searchEmployees(string $term, array $columns, ?int $limit = null): array
+    public function search(string $term, array $columns, ?int $limit = null): array
     {
         return employees::search($term, $columns, $limit);
     }

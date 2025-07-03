@@ -21,6 +21,8 @@ class User extends UserModel
     public $access_token;
     public $created_at;
     public $updated_at;
+    public ?string $deleted_at = null;  // nullable string
+
 
     public static function tableName(): string
     {
@@ -77,10 +79,16 @@ public static function search(string $term, array $columns = ['first_name', 'las
 
     return static::findAllByQuery($sql, $params);
 }
-    public static function findByEmail(string $email): ?self
-    {
-        return static::findOne(['email' => $email]);
-    }
+
+//  for findByEmail
+public static function findByEmail(string $email): ?self
+{
+    $table = static::tableName();
+    $sql = "SELECT * FROM $table WHERE email = :email AND deleted_at IS NULL";
+    $users = static::findAllByQuery($sql, ['email' => $email]);
+    return $users[0] ?? null;
+}
+
 
     public static function findByRole(string $role): array
     {

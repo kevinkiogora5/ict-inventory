@@ -2,11 +2,11 @@
 
 namespace Mcdcu\Projects\controllers\department;
 
-use Mcdcu\Projects\models\department\department;
 use Mcdcu\Projects\services\department\departmentService;
 use sigawa\mvccore\Request;
 use sigawa\mvccore\Response;
 use sigawa\mvccore\Controller;
+use sigawa\mvccore\exception\ValidationException;
 
 class departmentController extends Controller
 {
@@ -17,57 +17,63 @@ class departmentController extends Controller
         $this->departmentService = new departmentService();
     }
     public function index(Request $request, Response $response) {
-        $departments = $this->departmentService->getAllDepartments();
-        return $this->render('department/index', ['departments' => $departments]);
+        $departments = $this->departmentService->getAll();
+        $this->setLayout("admin");
+        return $this->render('department', ['department' => $departments]);
     }
 
-    public function create(Request $request, Response $response)
+   public function create(Request $request, Response $response)
     {
         if ($request->isPost()) {
             $data = $request->getBody();
-            $newDept = $this->departmentService->createDepartment($data);
-
-            if ($newDept) {
-                $response->redirect('/departments');
-                return;
+            try { 
+                $item = $this->departmentService->create($data);
+                return $response->json(['message' =>'Item created successfully.','data' => $item]);
+            } catch (ValidationException $th) {
+                //throw $th;
+                return $response->json(['error' => $th->errors], 400);
             }
-            return $this->render('department/create', ['error' => 'Failed to create department']);
+           
         }
 
-        return $this->render('department/create');
+        return $response->json(['error' => 'Invalid request method.'],400);
     }
 
     public function update(Request $request, Response $response)
     {
-        $id = $request->getParam('id');
-        if ($request->isPost()) {
+        if ($request->isPut()) {
             $data = $request->getBody();
-            if ($this->departmentService->updateDepartment((int)$id, $data)) {
-                $response->redirect('/departments');
-                return;
+            try {
+                $id = $request->getParam('id');
+                $item = $this->departmentService->update((int)$id, $data);
+                return $response->json(['message' => 'Item updated successfully.', 'data' => $item]);
+            } catch (ValidationException $th) {
+                return $response->json(['error' => $th->errors], 400);
             }
-            return $this->render('department/update', ['error' => 'Update failed']);
         }
-
-        $department = department::findbyId((int)$id);
-        return $this->render('department/update', ['department' => $department]);
+          return $response->json(['error' => 'Invalid request method.'],400);
     }
 
     public function delete(Request $request, Response $response)
     {
-        $id = $request->getParam('id');
-        if ($this->departmentService->deleteDepartment((int)$id)) {
-            $response->redirect('/departments');
-            return;
+    if ($request->isDelete()) {
+        try {
+            $id = $request->getParam('id');
+            $this->departmentService->delete((int)$id);
+            return $response->json(['message' => 'Item deleted successfully.']);
+        } catch (ValidationException $th) {
+            return $response->json(['error' => $th->errors], 400);
         }
-        return $this->render('department/index', ['error' => 'Failed to delete department']);
+    }
+     return $response->json(['error' => 'Invalid request method.'],400);
     }
 
     public function search(Request $request)
     {
         $term = $request->getParam('term');
-        $departments = $this->departmentService->searchDepartments($term, ['name', 'description']);
-        return $this->render('department/index', ['departments' => $departments]);
+        $items = $this->departmentService->search($term, ['name', 'description', 'brand', 'serial_number']);
+        return $this->render('inventory_items/index', ['items' => $items]);
     }
+
 
 }

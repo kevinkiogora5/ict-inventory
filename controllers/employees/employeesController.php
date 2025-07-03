@@ -2,71 +2,80 @@
 
 namespace Mcdcu\Projects\controllers\employees;
 
-use Mcdcu\Projects\models\employees\employees;
 use Mcdcu\Projects\services\employees\employeesService;
 use sigawa\mvccore\Request;
 use sigawa\mvccore\Response;
 use sigawa\mvccore\Controller;
+use sigawa\mvccore\exception\ValidationException;
 
 class employeesController extends Controller
 {
-        protected EmployeesService $employeeService;
+        protected employeesService $employeeService;
 
     public function __construct()
     {
-        $this->employeeService = new EmployeesService();
+        $this->employeeService = new employeesService();
     }
 
-    public function index()
+    public function index(): string
     {
-        $employees = $this->employeeService->getAllEmployees();
-        return $this->render('employee/index', ['employees' => $employees]);
+        $employees = $this->employeeService->getAll();
+        $this->setLayout("admin");
+        return $this->render('employees', ['employees' => $employees]);
     }
 
+    
     public function create(Request $request, Response $response)
     {
         if ($request->isPost()) {
             $data = $request->getBody();
-            $result = $this->employeeService->createEmployee($data);
-            if ($result) {
-                $response->redirect('/employees');
-                return;
+            try { 
+                $item = $this->employeeService->create($data);
+                return $response->json(['message' =>'Item created successfully.','data' => $item]);
+            } catch (ValidationException $th) {
+                //throw $th;
+                return $response->json(['error' => $th->errors], 400);
             }
-            return $this->render('employee/create', ['error' => 'Failed to create employee']);
+           
         }
 
-        return $this->render('employee/create');
+        return $response->json(['error' => 'Invalid request method.'],400);
     }
 
     public function update(Request $request, Response $response)
     {
-        $id = $request->getParam('id');
-        if ($request->isPost()) {
+        if ($request->isPut()) {
             $data = $request->getBody();
-            if ($this->employeeService->updateEmployee((int)$id, $data)) {
-                $response->redirect('/employees');
-                return;
+            try {
+                $id = $request->getParam('id');
+                $item = $this->employeeService->update((int)$id, $data);
+                return $response->json(['message' => 'Item updated successfully.', 'data' => $item]);
+            } catch (ValidationException $th) {
+                return $response->json(['error' => $th->errors], 400);
             }
-            return $this->render('employee/update', ['error' => 'Update failed']);
         }
-
-        $employee = employees::findbyId((int)$id);
-        return $this->render('employee/update', ['employee' => $employee]);
+          return $response->json(['error' => 'Invalid request method.'],400);
     }
 
     public function delete(Request $request, Response $response)
     {
-        $id = $request->getParam('id');
-        $this->employeeService->deleteEmployee((int)$id);
-        $response->redirect('/employees');
+    if ($request->isDelete()) {
+        try {
+            $id = $request->getParam('id');
+            $this->employeeService->delete((int)$id);
+            return $response->json(['message' => 'Item deleted successfully.']);
+        } catch (ValidationException $th) {
+            return $response->json(['error' => $th->errors], 400);
+        }
+    }
+     return $response->json(['error' => 'Invalid request method.'],400);
     }
 
     public function search(Request $request)
     {
         $term = $request->getParam('term');
-        $employees = $this->employeeService->searchEmployees($term, ['first_name', 'last_name', 'email', 'phone']);
-        return $this->render('employee/index', ['employees' => $employees]);
+        $items = $this->employeeService->search($term, ['name', 'description', 'brand', 'serial_number']);
+        return $this->render('inventory_items/index', ['items' => $items]);
     }
-
 
 }

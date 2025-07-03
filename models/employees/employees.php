@@ -6,14 +6,15 @@ use sigawa\mvccore\db\DbModel;
 
 class employees extends DbModel
 {
-    public $id = "";
-    public $first_name = "";
-    public $last_name = "";
-    public $email = "";
-    public $department_id = "";
-    public $user_id = "";
-    public $phone = "";
-    public $created_at = "";
+    public const RULE_MAX_LENGTH = 'max_length';
+    public int $id = 0;
+    public string $first_name = "";
+    public string $last_name = "";
+    public string $email = "";
+    public int $department_id = 0;
+    public int $user_id = 0;
+    public string $phone = "";
+    public string $created_at = "";
     public static function tableName(): string { return strtolower('employees'); }
     public function attributes(): array { return [
         'first_name',
@@ -24,64 +25,24 @@ class employees extends DbModel
         'phone',
     ]; }
     public function labels(): array { return []; }
-    public function rules() { return []; }
+    public function rules() { return [
+        'first_name' => [self::RULE_REQUIRED],
+        'last_name' => [self::RULE_REQUIRED],
+        'email' => [self::RULE_REQUIRED, self::RULE_EMAIL],
+        'department_id' => [self::RULE_REQUIRED, self::RULE_INTEGER],
+        'user_id' => [self::RULE_REQUIRED, self::RULE_INTEGER],
+        'phone' => [self::RULE_REQUIRED, self::RULE_STRING, self::RULE_MAX_LENGTH => 15]
+    ]; }
       public static function find_employees(): array
      {
     $table = static::tableName();
     $sql = "SELECT * FROM $table";
     return self::findAllByQuery($sql);
 }
-public static function create(array $data):?self
- {
-    $employees = new static();
-    foreach ($data as $key => $value) {
-        if (property_exists($employees, $key)) {
-            $employees->$key = $value;
+    public function beforeSave(): void
+    {
+        if ($this->isNewRecord) {
+            $this->created_at = date('Y-m-d H:i:s');
         }
     }
-    if ($employees->save()) {
-        return $employees;
-    }
-    return null;
-}
-public static function updateById(int $id, array $data): bool {
-    $instance = static::findbyId($id); // fetch the department by ID
-    if (!$instance) {
-        return false; // not found
-    }
-    foreach ($data as $key => $value) {
-        if (property_exists($instance, $key)) {
-            $instance->$key = $value;
-        }
-    }
-    return $instance->save();
-}
-public static function deleteById(int $id): bool {
-    $instance = static::findbyId($id);
-    if (!$instance) {
-        return false;
-    }
-    return $instance->delete();
-}
-public static function search(string $term, array $columns, ?int $limit = null): array {
-    $table = static::tableName();
-    $conditions = [];
-    $params = [];
-
-    foreach ($columns as $column) {
-        $conditions[] = "$column LIKE :term";
-    }
-    $sql = "SELECT * FROM $table";
-    if (!empty($conditions)) {
-        $sql .= ' WHERE (' . implode(' OR ', $conditions) . ')';
-        $params[':term'] = '%' . $term . '%';
-    }
-    if ($limit !== null) {
-        $sql .= ' LIMIT ' . intval($limit);
-    }
-
-    return static::findAllByQuery($sql, $params);
-}
-
-
 }

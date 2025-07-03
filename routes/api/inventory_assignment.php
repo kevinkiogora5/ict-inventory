@@ -1,11 +1,11 @@
 <?php
 
-use Mcdcu\Projects\controllers\inventory_assignment\inventory_assignmentController;
+use Mcdcu\Projects\controllers\Inventory\InventoryAssignmentController;
 
-$router->get('/inventory-assignment', [inventory_assignmentController::class, 'index']);
-$router->get('/inventory-assignment/create', [inventory_assignmentController::class, 'create']);
-$router->post('/inventory-assignment/create', [inventory_assignmentController::class, 'create']);
-$router->get('/inventory-assignment/update', [inventory_assignmentController::class, 'update']);
-$router->post('/inventory-assignment/update', [inventory_assignmentController::class, 'update']);
-$router->post('/inventory-assignment/delete', [inventory_assignmentController::class, 'delete']);
-$router->get('/inventory-assignment/search', [inventory_assignmentController::class, 'search']);
+$router->get('/assignment', [InventoryAssignmentController::class, 'index']);
+$router->get('/inventory-assignment/create', [InventoryAssignmentController::class, 'create']);
+$router->post('/inventory-assignment/create', [InventoryAssignmentController::class, 'create']);
+$router->get('/inventory-assignment/update', [InventoryAssignmentController::class, 'update']);
+$router->post('/inventory-assignment/update', [InventoryAssignmentController::class, 'update']);
+$router->post('/inventory-assignment/delete', [InventoryAssignmentController::class, 'delete']);
+$router->get('/inventory-assignment/search', [InventoryAssignmentController::class, 'search']);
